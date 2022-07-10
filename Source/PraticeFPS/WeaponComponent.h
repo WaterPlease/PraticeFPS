@@ -56,8 +56,9 @@ protected:
 public:	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-	virtual void Fire();
-	virtual void Reload();
+	virtual void Fire() {};
+	virtual void Reload() {};
+	virtual void SpawnBullet() {};
 
 	FORCEINLINE void SetMesh(USkeletalMeshComponent* Target) { Mesh = Target; }
 	FORCEINLINE USkeletalMeshComponent* GetMesh() { return Mesh; }

@@ -66,7 +66,6 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "FPS | Movement")
 	uint8 DashMaxCount;
 
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "FPS | Weapon")
 	class UWeaponComponent* WeaponComponent;
 

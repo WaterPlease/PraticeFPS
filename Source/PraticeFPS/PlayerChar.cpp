@@ -23,9 +23,7 @@ APlayerChar::APlayerChar()
 	Camera->SetupAttachment(GetRootComponent());
 	Camera->bUsePawnControlRotation = true;
 	GetMesh()->SetupAttachment(Camera);
-
 	WeaponComponent = CreateDefaultSubobject<USMGComponent>(TEXT("Weapon"));
-
 	Velocity = 650.f;
 	JumpVelocity = 650.f;
 	AirControl = .5f;
@@ -43,7 +41,6 @@ APlayerChar::APlayerChar()
 	DashDuration = 0.5f;
 	bDash = false;
 	JumpMaxCount = 2;
-
 }
 
 // Called when the game starts or when spawned

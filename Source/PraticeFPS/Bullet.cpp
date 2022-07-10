@@ -21,13 +21,14 @@ ABullet::ABullet()
 	ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovementComponent"));
 	ProjectileMovementComponent->SetUpdatedComponent(BulletHead);
 
-	// Use this component to drive this projectile's movement.
-	ProjectileMovementComponent->InitialSpeed = 300.0f;
-	ProjectileMovementComponent->MaxSpeed = 300;
+	ProjectileMovementComponent->InitialSpeed = 300.f;
+	ProjectileMovementComponent->MaxSpeed = 300.0f;
 	ProjectileMovementComponent->bRotationFollowsVelocity = true;
 	ProjectileMovementComponent->bShouldBounce = true;
 	ProjectileMovementComponent->Bounciness = 0.3f;
 	ProjectileMovementComponent->ProjectileGravityScale = 0.0f;
+
+	BulletHead->SetHiddenInGame(false);
 }
 
 // Called when the game starts or when spawned
@@ -35,31 +36,35 @@ void ABullet::BeginPlay()
 {
 	Super::BeginPlay();
 	BulletHead->OnComponentBeginOverlap.AddDynamic(this, &ABullet::OnBeginOverlap);
+	BulletHead->OnComponentHit.AddDynamic(this, &ABullet::OnHit);
 
-	BulletHead->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	BulletHead->SetCollisionObjectType(ECollisionChannel::ECC_GameTraceChannel1);
+	BulletHead->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	BulletHead->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
 	BulletHead->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	BulletHead->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Overlap);
+	BulletHead->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
 	BulletHead->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
-
-	BulletHead->SetSimulatePhysics(true);
-	BulletHead->SetEnableGravity(false);
-	BulletHead->bHiddenInGame = false;
-	BulletHead->SetSphereRadius(10.f);
 
 }
 
-void ABullet::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void ABullet::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	if (!OtherActor) return;
-	//if (OtherActor == (AActor*)OwnerPlayer) return;
 	if (OtherComp->GetCollisionObjectType() == ECollisionChannel::ECC_WorldStatic)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("WorldStatic collided"));
+		// Spawn decal
 	}
-	else if (OtherComp->GetCollisionObjectType() == ECollisionChannel::ECC_Pawn)
+}
+
+inline void ABullet::SetInitSpeed(float Speed) { ProjectileMovementComponent->InitialSpeed = Speed; }
+
+inline void ABullet::SetMaxSpeed(float Speed) { ProjectileMovementComponent->MaxSpeed = Speed; }
+
+inline void ABullet::SetBulletHeadSize(float Size) { BulletHead->SetSphereRadius(Size); }
+
+void ABullet::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (OtherActor->GetUniqueID() != OwnerID)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Pawn collided"));
+		// enemy hit
 	}
 }
 
@@ -68,5 +73,10 @@ void ABullet::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+}
+
+void ABullet::Launch(const FVector& direction) {
+	ProjectileMovementComponent->Velocity = ProjectileMovementComponent->InitialSpeed * direction;
+	BulletHead->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 }
 

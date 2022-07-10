@@ -21,8 +21,7 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "Bullet")
 	class UProjectileMovementComponent* ProjectileMovementComponent;
 
-	UPROPERTY()
-	class APlayerChar* OwnerPlayer;
+	uint32 OwnerID;
 
 	/**
 	* Implement This later...
@@ -37,8 +36,16 @@ protected:
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+
+	virtual void Launch(const FVector& direction);
 	
 	UFUNCTION()
 	void OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
+	UFUNCTION()
+	void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+
+	FORCEINLINE void SetInitSpeed(float Speed);
+	FORCEINLINE void SetMaxSpeed(float Speed);
+	FORCEINLINE void SetBulletHeadSize(float Size);
 };

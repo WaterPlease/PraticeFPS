@@ -18,15 +18,6 @@ UWeaponComponent::UWeaponComponent()
 }
 
 
-void UWeaponComponent::Fire()
-{
-
-}
-
-void UWeaponComponent::Reload()
-{
-
-}
 
 void UWeaponComponent::InitWeapon(APlayerChar* PlayerContext)
 {

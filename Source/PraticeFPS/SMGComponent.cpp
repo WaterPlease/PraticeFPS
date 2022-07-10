@@ -12,6 +12,7 @@
 #include "Bullet.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+
 USMGComponent::USMGComponent()
 {
 
@@ -21,7 +22,6 @@ void USMGComponent::Fire()
 {
 	if (!bTryFire || bReloading)
 		return;
-	UE_LOG(LogTemp, Warning, TEXT("Remain bullets : %d->%d"), RemainBullets,FMath::Max(RemainBullets-1,0));
 	if (RemainBullets == 0)
 	{
 		// play empty round sound
@@ -37,11 +37,10 @@ void USMGComponent::Fire()
 	UGameplayStatics::PlaySound2D(PlayerCharacter, WeaponFireSound,1.f,1.f,0.f,WeaponFireSoundConcurrency);
 	RemainBullets--;
 
-	FActorSpawnParameters SpawnParam;
-	SpawnParam.Owner = PlayerCharacter;
-	ABullet* Bullet = GetWorld()->SpawnActor<ABullet>(ABullet::StaticClass(),PlayerCharacter->Camera->GetComponentLocation(), PlayerCharacter->Camera->GetComponentRotation(), SpawnParam);
-	Bullet->ProjectileMovementComponent->Velocity = Bullet->ProjectileMovementComponent->Velocity.GetSafeNormal() * 300.f;
-	Bullet->ProjectileMovementComponent->UpdateComponentVelocity();
+
+	SpawnBullet();
+
+	// Fire delay timer
 	PlayerCharacter->GetWorldTimerManager().SetTimer(FireTimerHandle, this, &USMGComponent::Fire, Delay*InvFireRateFactor, false);
 }
 
@@ -57,6 +56,19 @@ void USMGComponent::Reload()
 	}
 	PlayerCharacter->GetWorldTimerManager().SetTimer(FireTimerHandle, this, &USMGComponent::ReloadDone, ReloadTime * InvReloadTimeFactor, false);
 }
+void USMGComponent::SpawnBullet()
+{
+	// Spawn bullet
+	FActorSpawnParameters SpawnParam;
+	SpawnParam.Owner = PlayerCharacter;
+	ABullet* Bullet = GetWorld()->SpawnActor<ABullet>(ABullet::StaticClass(), PlayerCharacter->Camera->GetComponentLocation(), PlayerCharacter->Camera->GetComponentRotation(), SpawnParam);
+	const FRotator CamRotation = PlayerCharacter->Camera->GetComponentRotation();
+	Bullet->OwnerID = PlayerCharacter->GetUniqueID();
+	Bullet->SetInitSpeed(10000.f);
+	Bullet->SetMaxSpeed(10000.f);
+	Bullet->SetBulletHeadSize(10.f);
+	Bullet->Launch(FRotationMatrix(CamRotation).GetUnitAxis(EAxis::X));
+}
 void USMGComponent::ReloadDone()
 {
 	bReloading = false;
@@ -66,6 +78,7 @@ void USMGComponent::ReloadDone()
 void USMGComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
 	bTryFire = false;
 	Delay = 0.075f;
 	InvFireRateFactor = 1.f / FireRateFactor;

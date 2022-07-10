@@ -17,6 +17,7 @@ public:
 	USMGComponent();
 	virtual void Fire() override;
 	virtual void Reload() override;
+	virtual void SpawnBullet() override;
 
 	UFUNCTION()
 	virtual void ReloadDone();
