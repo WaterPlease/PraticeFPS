@@ -7,6 +7,9 @@
 #include "PlayerChar.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "Engine/DecalActor.h"
+#include "Components/DecalComponent.h"
+#include "DrawDebugHelpers.h"
 
 #define EPS (1e-3)
 
@@ -25,8 +28,10 @@ ABullet::ABullet()
 	ProjectileMovementComponent->MaxSpeed = 300.0f;
 	ProjectileMovementComponent->bRotationFollowsVelocity = true;
 	ProjectileMovementComponent->bShouldBounce = true;
-	ProjectileMovementComponent->Bounciness = 0.3f;
+	ProjectileMovementComponent->Bounciness = 1.0f;
 	ProjectileMovementComponent->ProjectileGravityScale = 0.0f;
+	BounceCount = 0;
+	MaxBounceCount = 1;
 
 	BulletHead->SetHiddenInGame(false);
 }
@@ -44,6 +49,7 @@ void ABullet::BeginPlay()
 	BulletHead->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
 	BulletHead->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 
+	GetWorldTimerManager().SetTimer(BulletDestroyTimerHandle, this, &ABullet::DestroyBullet, 5.f);
 }
 
 void ABullet::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
@@ -51,6 +57,14 @@ void ABullet::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrim
 	if (OtherComp->GetCollisionObjectType() == ECollisionChannel::ECC_WorldStatic)
 	{
 		// Spawn decal
+		SpawnDecal(Hit.Location - Hit.ImpactNormal * 5.f, Hit.ImpactNormal.Rotation());
+		BounceCount++;
+
+		if (BounceCount == MaxBounceCount)
+		{
+			Destroy();
+		}
+		//DrawDebugLine(GetWorld(), Hit.Location, Hit.Location + Hit.ImpactNormal * 40.f, FColor::Red,false,20.f,0U,10.f);
 	}
 }
 
@@ -59,6 +73,11 @@ inline void ABullet::SetInitSpeed(float Speed) { ProjectileMovementComponent->In
 inline void ABullet::SetMaxSpeed(float Speed) { ProjectileMovementComponent->MaxSpeed = Speed; }
 
 inline void ABullet::SetBulletHeadSize(float Size) { BulletHead->SetSphereRadius(Size); }
+
+void ABullet::DestroyBullet()
+{
+	Destroy();
+}
 
 void ABullet::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
@@ -78,5 +97,19 @@ void ABullet::Tick(float DeltaTime)
 void ABullet::Launch(const FVector& direction) {
 	ProjectileMovementComponent->Velocity = ProjectileMovementComponent->InitialSpeed * direction;
 	BulletHead->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+}
+
+ADecalActor* ABullet::SpawnDecal(FVector Location, FRotator Rotator)
+{
+	if (!DecalMaterial) return nullptr;
+	Rotator.Pitch += 90.f; // Front of DecalActor look down initially.
+	ADecalActor* DecalActor = GetWorld()->SpawnActor<ADecalActor>(Location, Rotator);
+	if (!IsValid(DecalActor)) return nullptr;
+	DecalActor->SetDecalMaterial(DecalMaterial);
+	DecalActor->SetLifeSpan(5.f);
+	DecalActor->GetDecal()->DecalSize = FVector(10.f,4.f,4.f);
+	//const FVector endPoint = Location + DecalActor->GetTransform().GetUnitAxis(EAxis::X)*10.f;
+	//DrawDebugLine(GetWorld(), Location, endPoint, FColor::Red, false, 20.f, 0U, 10.f);
+	return DecalActor;
 }
 

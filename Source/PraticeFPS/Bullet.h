@@ -21,7 +21,13 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "Bullet")
 	class UProjectileMovementComponent* ProjectileMovementComponent;
 
+	class UMaterial* DecalMaterial;
+
+	int32 MaxBounceCount;
+	int32 BounceCount;
 	uint32 OwnerID;
+
+	FTimerHandle BulletDestroyTimerHandle;
 
 	/**
 	* Implement This later...
@@ -38,6 +44,8 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	virtual void Launch(const FVector& direction);
+
+	class ADecalActor* SpawnDecal(FVector Location, FRotator Rotator);
 	
 	UFUNCTION()
 	void OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
@@ -48,4 +56,6 @@ public:
 	FORCEINLINE void SetInitSpeed(float Speed);
 	FORCEINLINE void SetMaxSpeed(float Speed);
 	FORCEINLINE void SetBulletHeadSize(float Size);
+	
+	void DestroyBullet();
 };

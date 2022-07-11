@@ -40,6 +40,8 @@ APlayerChar::APlayerChar()
 	DashAccelFactor = 2.0f;
 	DashDuration = 0.5f;
 	bDash = false;
+	DashMaxCount = 2;
+	CurrentDashCount = 0;
 	JumpMaxCount = 2;
 }
 
@@ -94,10 +96,15 @@ void APlayerChar::Tick(float DeltaTime)
 	{
 		GetMesh()->SetRelativeLocation(MeshOffset);
 	}
+
 	if (bDash)
 	{
 		GetCharacterMovement()->Velocity = DashDirection * (FMath::Lerp(DashAccelFactor, 1.f, DashingTime / DashDuration) * Velocity);
 		DashingTime += DeltaTime;
+	}
+	else
+	{
+		if (!GetCharacterMovement()->IsFalling()) { CurrentDashCount = 0; }
 	}
 }
 
@@ -237,7 +244,8 @@ void APlayerChar::EndSliding()
 
 void APlayerChar::Dash()
 {
-	if (bDash) return;
+	if (CurrentDashCount >= DashMaxCount) return;
+	CurrentDashCount++;
 	bDash = true;
 	if (bSliding) EndSliding();
 	else if (bCrouch) InputUnCrouch();
@@ -270,4 +278,19 @@ void APlayerChar::EndFire()
 void APlayerChar::InputReload()
 {
 	WeaponComponent->Reload();
+}
+
+int32 APlayerChar::GetRemainBullets()
+{
+	return WeaponComponent->GetRemainBullets();
+}
+
+int32 APlayerChar::GetRoundCapacity()
+{
+	return WeaponComponent->GetRoundCapacity();
+}
+
+float APlayerChar::GetRemainBulletsNormalized()
+{
+	return WeaponComponent->GetRemainBulletsNormalized();
 }

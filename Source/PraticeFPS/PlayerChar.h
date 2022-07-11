@@ -65,6 +65,8 @@ public:
 	/** Not used yet*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "FPS | Movement")
 	uint8 DashMaxCount;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "FPS | Movement")
+	uint8 CurrentDashCount;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "FPS | Weapon")
 	class UWeaponComponent* WeaponComponent;
@@ -79,8 +81,6 @@ private:
 	uint8 JumpCount;
 	FVector SlidingDirection;
 	FVector DashDirection;
-	/** Not used yet*/
-	uint8 CurrentDashCount;
 
 protected:
 	// Called when the game starts or when spawned
@@ -107,5 +107,15 @@ public:
 	void StartFire();
 	void EndFire();
 	void InputReload();
+
+
+
+	// Player character's Data
+	UFUNCTION(BlueprintCallable)
+	int32 GetRemainBullets();
+	UFUNCTION(BlueprintCallable)
+	int32 GetRoundCapacity();
+	UFUNCTION(BlueprintCallable)
+	float GetRemainBulletsNormalized();
 
 };

@@ -12,6 +12,8 @@
 #include "Bullet.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "Engine/DecalActor.h"
+
 
 USMGComponent::USMGComponent()
 {
@@ -66,8 +68,9 @@ void USMGComponent::SpawnBullet()
 	Bullet->OwnerID = PlayerCharacter->GetUniqueID();
 	Bullet->SetInitSpeed(10000.f);
 	Bullet->SetMaxSpeed(10000.f);
-	Bullet->SetBulletHeadSize(10.f);
+	Bullet->SetBulletHeadSize(1.f);
 	Bullet->Launch(FRotationMatrix(CamRotation).GetUnitAxis(EAxis::X));
+	Bullet->DecalMaterial = WeaponDecalMaterial;
 }
 void USMGComponent::ReloadDone()
 {
@@ -85,7 +88,7 @@ void USMGComponent::BeginPlay()
 	InvDelay = 1.f / Delay;
 
 	RoundCapacity = 30;
-	RemainBullets = 1;//RoundCapacity;
+	RemainBullets = RoundCapacity;
 
 	ReloadTime = 1.5f;
 	InvReloadTime = 1.f / ReloadTime;
@@ -154,5 +157,15 @@ void USMGComponent::InitWeapon(APlayerChar* PlayerContext)
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Failed to a load asset : %s"), TEXT("/Game/FPS_Weapon_Bundle/Weapons/Meshes/SMG11/Sound/9mm_SoundConcurrency.9mm_SoundConcurrency"));
+	}
+
+	UMaterial* DecalMaterial = Cast<UMaterial>(StaticLoadObject(UMaterial::StaticClass(), nullptr, TEXT("/Game/Texture/BulletHoleMaterial.BulletHoleMaterial")));
+	if (DecalMaterial)
+	{
+		WeaponDecalMaterial = DecalMaterial;
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Failed to a load asset : %s"), TEXT("/Game/Texture/BulletHoleMaterial.BulletHoleMaterial"));
 	}
 }

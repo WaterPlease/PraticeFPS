@@ -28,6 +28,8 @@ public:
 	class USoundConcurrency* WeaponFireSoundConcurrency;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon | Internal")
 	class USoundCue* WeaponReloadSound;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon | Internal")
+	class UMaterial* WeaponDecalMaterial;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon | Stat")
 	float Delay;
@@ -66,5 +68,9 @@ public:
 	FORCEINLINE UAnimMontage* GetAnimMontage() { return WeaponAnimMontage; }
 
 	virtual void InitWeapon(APlayerChar* PlayerContext);
+
+	FORCEINLINE int32 GetRoundCapacity() { return RoundCapacity; }
+	FORCEINLINE int32 GetRemainBullets() { return RemainBullets; }
+	FORCEINLINE float GetRemainBulletsNormalized() { return RemainBullets/(float)RoundCapacity; }
 		
 };
