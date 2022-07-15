@@ -10,6 +10,7 @@
 #include "Engine/DecalActor.h"
 #include "Components/DecalComponent.h"
 #include "DrawDebugHelpers.h"
+#include "EnemyBodypart.h"
 
 #define EPS (1e-3)
 
@@ -47,7 +48,8 @@ void ABullet::BeginPlay()
 	BulletHead->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
 	BulletHead->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	BulletHead->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
-	BulletHead->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+	//BulletHead->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+	BulletHead->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel1, ECollisionResponse::ECR_Overlap);
 
 	GetWorldTimerManager().SetTimer(BulletDestroyTimerHandle, this, &ABullet::DestroyBullet, 5.f);
 }
@@ -81,10 +83,18 @@ void ABullet::DestroyBullet()
 
 void ABullet::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (OtherActor->GetUniqueID() != OwnerID)
+	UE_LOG(LogTemp, Warning, TEXT("overlap"));
+	if (OtherActor->GetUniqueID() == OwnerID)
 	{
-		// enemy hit
+		return;
 	}
+
+	UEnemyBodypart* Bodypart = Cast<UEnemyBodypart>(OtherComp);
+	if (!Bodypart) return;
+	
+	// Enemy hit
+	UE_LOG(LogTemp, Warning, TEXT("Bodypart hit : %s => %f"), *(Bodypart->BodypartName),Bodypart->DamageFactor);
+	DestroyBullet();
 }
 
 // Called every frame
