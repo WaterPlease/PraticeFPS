@@ -15,6 +15,7 @@ enum class EEnemyState : uint8
 	EES_Idle UMETA(DisplayName="Idle"),
 	EES_Chase UMETA(DisplayName = "Chase"),
 	EES_Attack UMETA(DisplayName = "Attack"),
+	EES_Dead UMETA(DisplayName = "Dead"),
 
 	EES_MAX UMETA(DisplayName = "DefaultMax"),
 };
@@ -37,8 +38,28 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI")
 	class USphereComponent* AttackSphere;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI")
+	class UBoxComponent* AttackCollision;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI")
 	EEnemyState EnemyState;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
+	bool bCanAttackPlayer;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character | Stats")
+	float MaxHealth;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character | Stats")
+	float Health;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character | Stats")
+	float DeathDelay;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character | Stats")
+	float BaseDamage;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character | Stats")
+	TSubclassOf<UDamageType> DamageType;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character | Animation")
+	class UAnimMontage* EnemyAnimMontage;
 
 	class APlayerChar* Player;
 
@@ -64,6 +85,8 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Bodypart")
 	UEnemyBodypart* LeftLeg;
 
+	FTimerHandle DeathTimerHandle;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -71,12 +94,33 @@ protected:
 public:	
 
 	void ChasePlayer();
+	void AttackPlayer();
 
-
+	// Damage Logic
+	void UpdateHealth(float DeltaHealth);
+	void Die();
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	UFUNCTION()
+	void OnAttackSphereOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	UFUNCTION()
+	void OnAttackSphereOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+
+	UFUNCTION(BlueprintCallable)
+	void DeathEnd();
+	void DestroyEnemy();
+
+
+	UFUNCTION(BlueprintCallable)
+	void ActivateAttackCollision();
+	UFUNCTION(BlueprintCallable)
+	void DeactivateAttackCollision();
+	UFUNCTION()
+	void OnAttackCollisionOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 };

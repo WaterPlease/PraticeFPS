@@ -8,6 +8,9 @@
 #include "PlayerChar.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "EnemyBodypart.h"
+#include "Animation/AnimInstance.h"
+#include "Components/CapsuleComponent.h"
+#include "Components/BoxComponent.h"
 
 // Sets default values
 AEnemy::AEnemy()
@@ -17,6 +20,9 @@ AEnemy::AEnemy()
 
 	AttackSphere = CreateDefaultSubobject<USphereComponent>(TEXT("AttackSphere"));
 	AttackSphere->SetupAttachment(GetRootComponent());
+
+	AttackCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("AttackCollision"));
+	AttackCollision->SetupAttachment(GetMesh(),FName("AttackSocket"));
 
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	bUseControllerRotationPitch = false;
@@ -55,6 +61,15 @@ AEnemy::AEnemy()
 	LeftLeg = CreateDefaultSubobject<UEnemyBodypart>(TEXT("LeftLeg"));
 	LeftLeg->SetupAttachment(GetMesh(), "LeftLegSocket");
 
+	EnemyState = EEnemyState::EES_Idle;
+	bCanAttackPlayer = false;
+
+	MaxHealth = 100.f;
+	Health = 28.f;
+
+	DeathDelay = 3.f;
+
+	BaseDamage = 10.f;
 }
 
 // Called when the game starts or when spawned
@@ -98,28 +113,91 @@ void AEnemy::BeginPlay()
 	LeftLeg->BodypartName = "LeftLeg";
 	LeftLeg->Enemy = this;
 
-	ChasePlayer();
+	AttackSphere->OnComponentBeginOverlap.AddDynamic(this,&AEnemy::OnAttackSphereOverlapBegin);
+	AttackSphere->OnComponentEndOverlap.AddDynamic(this,&AEnemy::OnAttackSphereOverlapEnd);
+
+	AttackCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	AttackCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	AttackCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+	AttackCollision->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::OnAttackCollisionOverlapBegin);
 }
 
 void AEnemy::ChasePlayer()
 {
 	if (!AIController) return;
-	UE_LOG(LogTemp, Warning, TEXT("Chasing Start"));
 
 	FAIMoveRequest MoveRequest;
 	MoveRequest.SetGoalActor(Player);
 	MoveRequest.SetAcceptanceRadius(AttackSphere->GetScaledSphereRadius());
 
 	FNavPathSharedPtr NavPath;
-	if (AIController->GetMoveStatus() == EPathFollowingStatus::Idle)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Focus actor check succ 0"));
-	}
 	AIController->MoveTo(MoveRequest, &NavPath);
-	if (AIController->GetMoveStatus() != EPathFollowingStatus::Idle)
+
+	EnemyState = EEnemyState::EES_Chase;
+}
+
+void AEnemy::AttackPlayer()
+{
+	if (!EnemyAnimMontage) return;
+	
+	EnemyState = EEnemyState::EES_Attack;
+	
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (AnimInstance)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Focus actor check succ 1"));
+		AnimInstance->Montage_Play(EnemyAnimMontage, 1.0f);
+		AnimInstance->Montage_JumpToSection(FName("Attack"), EnemyAnimMontage);
 	}
+}
+
+void AEnemy::UpdateHealth(float DeltaHealth)
+{
+	Health += DeltaHealth;
+	if (Health < 0.f)
+	{
+		Die();
+		return;
+	}
+}
+
+void AEnemy::Die()
+{
+	if (EnemyState == EEnemyState::EES_Dead) return;
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (!AnimInstance)
+	{
+		Destroy();
+		return;
+	}
+
+	AnimInstance->Montage_Play(EnemyAnimMontage, 1.0f);
+	AnimInstance->Montage_JumpToSection(FName("Death"), EnemyAnimMontage);
+
+	EnemyState = EEnemyState::EES_Dead;
+
+	AIController->StopMovement();
+
+	GetCapsuleComponent()->SetCollisionResponseToAllChannels(
+		ECollisionResponse::ECR_Ignore
+	);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(
+		ECollisionChannel::ECC_WorldStatic,
+		ECollisionResponse::ECR_Block
+	);
+}
+
+float AEnemy::TakeDamage(
+	float DamageAmount, 
+	FDamageEvent const& DamageEvent, 
+	AController* EventInstigator, 
+	AActor* DamageCauser)
+{
+	float EffectiveDamage = -DamageAmount;
+	// Modify EffectiveDamage here
+	// ...
+	UpdateHealth(EffectiveDamage);
+	return -EffectiveDamage;
 }
 
 // Called every frame
@@ -127,6 +205,35 @@ void AEnemy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	switch (EnemyState)
+	{
+	case EEnemyState::EES_Idle:
+		if (bCanAttackPlayer)
+		{
+			AttackPlayer();
+		}
+		else
+		{
+			ChasePlayer();
+		}
+		break;
+	case EEnemyState::EES_Chase:
+		if (bCanAttackPlayer)
+		{
+			AttackPlayer();
+		}
+		else
+		{
+			if (AIController->GetMoveStatus()
+				== EPathFollowingStatus::Idle)
+			{
+				ChasePlayer();
+			}
+		}
+		break;
+	default:
+		break;
+	}
 }
 
 // Called to bind functionality to input
@@ -134,5 +241,48 @@ void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
+}
+
+void AEnemy::OnAttackSphereOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (OtherActor != (AActor*)Player) return;
+	
+	bCanAttackPlayer = true;
+}
+
+void AEnemy::OnAttackSphereOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	if (OtherActor != (AActor*)Player) return;
+	
+	bCanAttackPlayer = false;
+}
+
+void AEnemy::DeathEnd()
+{
+	GetWorldTimerManager().SetTimer(DeathTimerHandle, this, &AEnemy::DestroyEnemy, DeathDelay, false);
+
+	GetMesh()->bPauseAnims = true;
+}
+
+void AEnemy::DestroyEnemy()
+{
+	Destroy();
+}
+
+void AEnemy::ActivateAttackCollision()
+{
+	AttackCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+}
+
+void AEnemy::DeactivateAttackCollision()
+{
+	AttackCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+}
+
+void AEnemy::OnAttackCollisionOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (OtherActor != (AActor*)Player) return;
+
+	UGameplayStatics::ApplyDamage(Player, BaseDamage, GetController(), this, DamageType);
 }
 

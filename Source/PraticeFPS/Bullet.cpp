@@ -11,6 +11,8 @@
 #include "Components/DecalComponent.h"
 #include "DrawDebugHelpers.h"
 #include "EnemyBodypart.h"
+#include "Kismet/GameplayStatics.h"
+
 
 #define EPS (1e-3)
 
@@ -32,7 +34,9 @@ ABullet::ABullet()
 	ProjectileMovementComponent->Bounciness = 1.0f;
 	ProjectileMovementComponent->ProjectileGravityScale = 0.0f;
 	BounceCount = 0;
-	MaxBounceCount = 1;
+	MaxBounceCount = 2;
+
+	BaseDamage = 15.f;
 
 	BulletHead->SetHiddenInGame(false);
 }
@@ -83,15 +87,12 @@ void ABullet::DestroyBullet()
 
 void ABullet::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	UE_LOG(LogTemp, Warning, TEXT("overlap"));
-	if (OtherActor->GetUniqueID() == OwnerID)
-	{
-		return;
-	}
-
 	UEnemyBodypart* Bodypart = Cast<UEnemyBodypart>(OtherComp);
 	if (!Bodypart) return;
 	
+	UGameplayStatics::ApplyDamage(OtherActor, Bodypart->DamageFactor * BaseDamage, PlayerChar->GetController(),
+		this, BulletDamageType);
+
 	// Enemy hit
 	UE_LOG(LogTemp, Warning, TEXT("Bodypart hit : %s => %f"), *(Bodypart->BodypartName),Bodypart->DamageFactor);
 	DestroyBullet();

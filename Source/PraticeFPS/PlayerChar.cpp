@@ -10,6 +10,7 @@
 #include "Animation/AnimInstance.h"
 #include "WeaponComponent.h"
 #include "SMGComponent.h"
+#include "GameFramework/Actor.h"
 
 #define EPS (1e-3)
 
@@ -43,6 +44,12 @@ APlayerChar::APlayerChar()
 	DashMaxCount = 2;
 	CurrentDashCount = 0;
 	JumpMaxCount = 2;
+
+	MaxHealth = 100.f;
+	Health = 70.f;
+	HealthRate = 1.f;
+	HealthRegenTime = 10.f;
+	HealthStatus = EHealthStatus::EHS_Idle;
 }
 
 // Called when the game starts or when spawned
@@ -72,6 +79,9 @@ void APlayerChar::BeginPlay()
 void APlayerChar::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	if (!GetCharacterMovement()->IsFalling())
+		JumpCount = 0;
 
 	//GetMesh()->SetRelativeLocation(MeshOffset);
 	if (bRunning 
@@ -105,6 +115,13 @@ void APlayerChar::Tick(float DeltaTime)
 	else
 	{
 		if (!GetCharacterMovement()->IsFalling()) { CurrentDashCount = 0; }
+	}
+
+	// Health Regen
+	if (HealthStatus == EHealthStatus::EHS_Idle &&
+		Health < MaxHealth)
+	{
+		Health = FMath::Min(Health + DeltaTime * HealthRate, MaxHealth);
 	}
 }
 
@@ -144,6 +161,8 @@ void APlayerChar::InputJump()
 	{
 		if (JumpCount < JumpMaxCount) JumpCount++;
 		else return;
+
+		JumpCount = FMath::Max<uint8>(2,JumpCount);
 	}
 	else
 	{
@@ -278,6 +297,50 @@ void APlayerChar::EndFire()
 void APlayerChar::InputReload()
 {
 	WeaponComponent->Reload();
+}
+
+void APlayerChar::UpdateHealth(float DeltaHealth, bool bOverheal=false)
+{
+	Health += DeltaHealth;
+	if (DeltaHealth < 0.f)
+	{
+		HealthStatus = EHealthStatus::EHS_Hurt;
+		GetWorldTimerManager().ClearTimer(HealthTimerHandle);
+		GetWorldTimerManager().SetTimer(HealthTimerHandle, this,
+			&APlayerChar::RegenHealth, HealthRegenTime, false);
+		if (Health < 0.f)
+		{
+			Die();
+			return;
+		}
+	}
+	if (Health > MaxHealth && !bOverheal) Health = MaxHealth;
+}
+
+void APlayerChar::RegenHealth()
+{
+	HealthStatus = EHealthStatus::EHS_Idle;
+}
+
+void APlayerChar::Die()
+{
+	HealthStatus = EHealthStatus::EHS_Die;
+	Health = 0.f;
+}
+
+float APlayerChar::TakeDamage(
+	float DamageAmount,
+	FDamageEvent const& DamageEvent,
+	AController* EventInstigator,
+	AActor* DamageCauser)
+{
+	float EffectiveDamage = -DamageAmount;
+	
+	// Modify EffectiveDamage here
+	// ...
+
+	UpdateHealth(EffectiveDamage);
+	return -EffectiveDamage;
 }
 
 int32 APlayerChar::GetRemainBullets()

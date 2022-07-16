@@ -21,11 +21,19 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "Bullet")
 	class UProjectileMovementComponent* ProjectileMovementComponent;
 
+	UPROPERTY(VisibleAnywhere, Category = "Bullet")
+	float BaseDamage;
+	
+	UPROPERTY(VisibleAnywhere, Category = "Bullet")
+	class APlayerChar* PlayerChar;
+
+	UPROPERTY(VisibleAnywhere, Category = "Bullet")
+	TSubclassOf<class UDamageType> BulletDamageType;
+
 	class UMaterial* DecalMaterial;
 
 	int32 MaxBounceCount;
 	int32 BounceCount;
-	uint32 OwnerID;
 
 	FTimerHandle BulletDestroyTimerHandle;
 

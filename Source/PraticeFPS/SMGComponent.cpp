@@ -65,7 +65,7 @@ void USMGComponent::SpawnBullet()
 	SpawnParam.Owner = PlayerCharacter;
 	ABullet* Bullet = GetWorld()->SpawnActor<ABullet>(ABullet::StaticClass(), PlayerCharacter->Camera->GetComponentLocation(), PlayerCharacter->Camera->GetComponentRotation(), SpawnParam);
 	const FRotator CamRotation = PlayerCharacter->Camera->GetComponentRotation();
-	Bullet->OwnerID = PlayerCharacter->GetUniqueID();
+	Bullet->PlayerChar = PlayerCharacter;
 	Bullet->SetInitSpeed(10000.f);
 	Bullet->SetMaxSpeed(10000.f);
 	Bullet->SetBulletHeadSize(1.f);

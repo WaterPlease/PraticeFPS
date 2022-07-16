@@ -6,6 +6,15 @@
 #include "GameFramework/Character.h"
 #include "PlayerChar.generated.h"
 
+enum class EHealthStatus : uint8
+{
+	EHS_Idle UMETA(DisplayName="Idle"),
+	EHS_Hurt UMETA(DisplayName = "Hurt"),
+	EHS_Die UMETA(DisplayName = "Die"),
+
+	EHS_MAX UMETA(DisplayName = "DefaultMax"),
+};
+
 UCLASS()
 class PRATICEFPS_API APlayerChar : public ACharacter
 {
@@ -18,9 +27,9 @@ public:
 
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "FPS | Camera")
-		FVector CameraOffset;
+	FVector CameraOffset;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "FPS | Mesh")
-		FVector MeshOffset;
+	FVector MeshOffset;
 
 	// Fileds for movement
 	/** Walk velocity */
@@ -71,8 +80,20 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "FPS | Weapon")
 	class UWeaponComponent* WeaponComponent;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character | Stats")
+	float MaxHealth;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character | Stats")
+	float Health;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character | Stats")
+	float HealthRate;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character | Stats")
+	float HealthRegenTime;
+	EHealthStatus HealthStatus;
+
+
 	FTimerHandle SlidingTimerHandle;
 	FTimerHandle DashTimerHandle;
+	FTimerHandle HealthTimerHandle;
 private:
 	float StandHeight;
 	float SlidedTime;
@@ -107,6 +128,12 @@ public:
 	void StartFire();
 	void EndFire();
 	void InputReload();
+
+	// Damage logic
+	void UpdateHealth(float DeltaHealth, bool bOverheal);
+	void RegenHealth();
+	void Die();
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
 
 
