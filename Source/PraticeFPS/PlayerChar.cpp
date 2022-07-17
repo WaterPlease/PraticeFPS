@@ -11,6 +11,8 @@
 #include "WeaponComponent.h"
 #include "SMGComponent.h"
 #include "GameFramework/Actor.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundCue.h"
 
 #define EPS (1e-3)
 
@@ -73,6 +75,10 @@ void APlayerChar::BeginPlay()
 
 	MeshOffset = GetMesh()->GetRelativeLocation();// -Camera->GetComponentLocation();
 	UE_LOG(LogTemp, Warning, TEXT("%f, %f, %f"), MeshOffset.X, MeshOffset.Y, MeshOffset.Z);
+
+	GetCharacterMovement()->MaxWalkSpeed = Velocity;
+	GetCharacterMovement()->MaxWalkSpeedCrouched = CrouchVelocity;
+	GetCharacterMovement()->bCanWalkOffLedgesWhenCrouching = true;
 }
 
 // Called every frame
@@ -89,10 +95,12 @@ void APlayerChar::Tick(float DeltaTime)
 	ToggleRun();
 	if (bSliding)
 	{
-		float ZVelocity = GetCharacterMovement()->Velocity.Z;
-		GetCharacterMovement()->Velocity = SlidingDirection * (FMath::Lerp(SlidingAccelFactor,1.f,SlidedTime/SlidingTime) * Velocity);
-		GetCharacterMovement()->Velocity.Z = ZVelocity;
-		SlidedTime += DeltaTime;
+		GetCharacterMovement()->Velocity.X = SlidingDirection.X;
+		GetCharacterMovement()->Velocity.Y = SlidingDirection.Y;
+		if (GetCharacterMovement()->IsFalling())
+		{
+			GetCharacterMovement()->Velocity.Z += GetCharacterMovement()->GetGravityZ() * DeltaTime;
+		}
 	}
 	if (CrouchingTime < CrouchTime)
 	{
@@ -163,6 +171,12 @@ void APlayerChar::InputJump()
 		else return;
 
 		JumpCount = FMath::Max<uint8>(2,JumpCount);
+		if (JumpInAirSound)
+		{
+			// Start time is hardcoded for now...
+			UE_LOG(LogTemp, Warning, TEXT("Start time of jump sound is hardcoded. This need to be fixed later..."));
+			UGameplayStatics::PlaySound2D(GetWorld(), JumpInAirSound,1.f,1.f,4.5f);
+		}
 	}
 	else
 	{
@@ -175,7 +189,8 @@ void APlayerChar::InputJump()
 void APlayerChar::InputHorizontal(float Value)
 {
 	if (Controller != nullptr &&
-		FMath::Abs(Value) > EPS)
+		FMath::Abs(Value) > EPS &&
+		!bSliding)
 	{
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation = FRotator(0.f, Rotation.Yaw, 0.f);
@@ -188,7 +203,8 @@ void APlayerChar::InputHorizontal(float Value)
 void APlayerChar::InputVertical(float Value)
 {
 	if (Controller != nullptr &&
-		FMath::Abs(Value) > EPS)
+		FMath::Abs(Value) > EPS &&
+		!bSliding)
 	{
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation = FRotator(0.f, Rotation.Yaw, 0.f);
@@ -212,10 +228,11 @@ void APlayerChar::InputCrouch()
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation = FRotator(0.f, Rotation.Yaw, 0.f);
 
-		SlidingDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+		SlidingDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X) * SlidingAccelFactor * Velocity;
 
 		GetWorldTimerManager().SetTimer(SlidingTimerHandle, this, &APlayerChar::EndSliding, SlidingTime, false);
-		SlidedTime = 0.f;
+
+		GetCharacterMovement()->MaxWalkSpeedCrouched = Velocity * SlidingAccelFactor;
 	}
 	else
 	{
@@ -258,6 +275,7 @@ void APlayerChar::Walk()
 void APlayerChar::EndSliding()
 {
 	bSliding = false;
+	GetCharacterMovement()->MaxWalkSpeedCrouched = CrouchVelocity;
 	InputUnCrouch();
 }
 
@@ -276,6 +294,11 @@ void APlayerChar::Dash()
 	DashDirection = (RightDirection + FrontDirection).GetSafeNormal();
 	if (DashDirection.IsNearlyZero()) DashDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 	DashingTime = 0.f;
+	if (DashSound)
+	{
+		UGameplayStatics::PlaySound2D(GetWorld(), DashSound);
+	}
+	GetWorldTimerManager().ClearTimer(DashTimerHandle);
 	GetWorldTimerManager().SetTimer(DashTimerHandle, this, &APlayerChar::EndDash, DashDuration,false);
 }
 void APlayerChar::EndDash()

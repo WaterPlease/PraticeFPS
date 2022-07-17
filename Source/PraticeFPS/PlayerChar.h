@@ -35,9 +35,13 @@ public:
 	/** Walk velocity */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "FPS | Movement")
 	float Velocity;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "FPS | Movement")
+	float CrouchVelocity;
 	/** Jump velocity in z-axis */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "FPS | Movement")
 	float JumpVelocity;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "FPS | Movement")
+	class USoundCue* JumpInAirSound;
 	/** In-Air Control factor*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "FPS | Movement")
 	float AirControl;
@@ -71,6 +75,8 @@ public:
 	float DashDuration;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "FPS | Movement")
 	bool bDash;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "FPS | Movement")
+	USoundCue* DashSound;
 	/** Not used yet*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "FPS | Movement")
 	uint8 DashMaxCount;

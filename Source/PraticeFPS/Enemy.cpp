@@ -120,6 +120,8 @@ void AEnemy::BeginPlay()
 	AttackCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	AttackCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 	AttackCollision->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::OnAttackCollisionOverlapBegin);
+
+	GetCharacterMovement()->bUseRVOAvoidance = true;
 }
 
 void AEnemy::ChasePlayer()
