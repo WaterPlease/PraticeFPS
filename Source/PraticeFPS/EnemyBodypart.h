@@ -9,7 +9,7 @@
 /**
  * 
  */
-UCLASS()
+UCLASS(Blueprintable)
 class PRATICEFPS_API UEnemyBodypart : public UBoxComponent
 {
 	GENERATED_BODY()
@@ -23,6 +23,15 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Bodypart")
 	float DamageFactor;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Bodypart")
+	UParticleSystem* BloodParticleSystem;
+
 	class AEnemy* Enemy;
-	
+
+public:
+
+	virtual void BeginPlay() override;
+
+	UFUNCTION()
+	void OnBodypartAttacked(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 };

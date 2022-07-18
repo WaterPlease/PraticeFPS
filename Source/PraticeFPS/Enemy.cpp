@@ -70,6 +70,9 @@ AEnemy::AEnemy()
 	DeathDelay = 3.f;
 
 	BaseDamage = 10.f;
+
+	StandupDelay = 5.f;
+	bFalling = false;
 }
 
 // Called when the game starts or when spawned
@@ -122,6 +125,12 @@ void AEnemy::BeginPlay()
 	AttackCollision->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::OnAttackCollisionOverlapBegin);
 
 	GetCharacterMovement()->bUseRVOAvoidance = true;
+
+	DefaultMeshCollisionPresetName = GetMesh()->GetCollisionProfileName();
+
+	MeshRelativeTransform = GetMesh()->GetRelativeTransform();
+
+	StandupAnimSectionIndex = EnemyAnimMontage->GetSectionIndex(FName("StandupOnBack"));
 }
 
 void AEnemy::ChasePlayer()
@@ -167,6 +176,7 @@ void AEnemy::Die()
 {
 	if (EnemyState == EEnemyState::EES_Dead) return;
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	GetWorldTimerManager().ClearTimer(StandupTimerHandle);
 	if (!AnimInstance)
 	{
 		Destroy();
@@ -207,6 +217,14 @@ void AEnemy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (GetCharacterMovement()->IsFalling() &&
+		GetMesh()->GetPhysicsAsset())
+	{
+		Ragdoll();
+		AIController->StopMovement();
+		GetWorldTimerManager().SetTimer(StandupTimerHandle, this, &AEnemy::StandUp, StandupDelay);
+	}
+
 	switch (EnemyState)
 	{
 	case EEnemyState::EES_Idle:
@@ -233,6 +251,21 @@ void AEnemy::Tick(float DeltaTime)
 			}
 		}
 		break;
+	case EEnemyState::EES_Falling:
+		break;
+	case EEnemyState::EES_Standup:
+		//GetMesh()->SetAllBodiesBelowPhysicsBlendWeight(FName("Hips"), 1.f - StandupTimeTaken / StandupTimeWhole);
+		//StandupTimeTaken += DeltaTime;
+		if (StandupTimeTaken < 1e-6)
+		{
+			auto AnimInstance = GetMesh()->GetAnimInstance();
+			AnimInstance->Montage_Play(EnemyAnimMontage, 1.f);
+			AnimInstance->Montage_JumpToSection(FName("StandupOnBack"), EnemyAnimMontage);
+			StandupTimeWhole = EnemyAnimMontage->GetSectionLength(StandupAnimSectionIndex);
+			StandupTimeTaken = 0.f;
+		}
+		StandupTimeTaken += DeltaTime;
+		break;
 	default:
 		break;
 	}
@@ -257,6 +290,58 @@ void AEnemy::OnAttackSphereOverlapEnd(UPrimitiveComponent* OverlappedComponent, 
 	if (OtherActor != (AActor*)Player) return;
 	
 	bCanAttackPlayer = false;
+}
+
+void AEnemy::Ragdoll()
+{
+	EnemyState = EEnemyState::EES_Falling;
+	bFalling = true;
+
+	GetMesh()->SetCollisionProfileName(FName("Ragdoll"));
+	//GetMesh()->SetSimulatePhysics(true);
+	GetMesh()->SetAllBodiesBelowSimulatePhysics(FName("Hips"), true);
+	GetMesh()->SetAllBodiesBelowPhysicsBlendWeight(FName("Hips"), 1.f);
+}
+
+void AEnemy::StandUp()
+{	
+	EnemyState = EEnemyState::EES_Standup;
+
+	GetMesh()->SetAllBodiesBelowSimulatePhysics(FName("Hips"), false);
+	GetMesh()->SetCollisionProfileName(DefaultMeshCollisionPresetName);
+
+	UpdateMeshPosition(false);
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (!AnimInstance) return;
+	//GetMesh()->PlayAnimation(StandupAnimation,false);
+	StandupTimeTaken = 0.f;
+}
+
+void AEnemy::StandupDone()
+{
+	EnemyState = EEnemyState::EES_Idle;
+	bFalling = false;
+	UpdateMeshPosition(true);
+}
+
+void AEnemy::UpdateMeshPosition(bool bUpdateMeshPosition)
+{
+	FVector CenterLocation = GetMesh()->GetBoneLocation(FName("Hips"));
+	FRotator CenterRotation = GetMesh()->GetSocketRotation("StomachSocket");
+
+	GetCapsuleComponent()->SetWorldLocation(CenterLocation);
+	FVector FrontVector = FRotationMatrix(CenterRotation).GetUnitAxis(EAxis::Y);
+	FrontVector.Z = 0.f;
+	const FRotator FrontRotation = FrontVector.Rotation();
+	GetCapsuleComponent()->SetWorldRotation(FrontRotation);
+
+	GetMesh()->AttachToComponent(GetCapsuleComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	//GetMesh()->SetRelativeTransform(MeshRelativeTransform);
+	GetMesh()->SetRelativeLocation(FVector(0.f,0.f,MeshRelativeTransform.GetLocation().Z));
+	if (bUpdateMeshPosition)
+		GetMesh()->SetRelativeLocation(MeshRelativeTransform.GetLocation());
+	GetMesh()->SetRelativeRotation(MeshRelativeTransform.GetRotation());
 }
 
 void AEnemy::DeathEnd()

@@ -61,9 +61,9 @@ public:
 	UFUNCTION()
 	void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
-	FORCEINLINE void SetInitSpeed(float Speed);
-	FORCEINLINE void SetMaxSpeed(float Speed);
-	FORCEINLINE void SetBulletHeadSize(float Size);
+	void SetInitSpeed(float Speed);
+	void SetMaxSpeed(float Speed);
+	void SetBulletHeadSize(float Size);
 	
 	void DestroyBullet();
 };

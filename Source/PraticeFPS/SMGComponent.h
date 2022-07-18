@@ -30,6 +30,13 @@ public:
 	FTimerHandle ReloadTimerHandle;
 private:
 	float InvReloadTime;
+
+	USkeletalMesh* SK_SMG11;
+	UAnimMontage* SMGAnimMontage;
+	USoundCue* SMGCue;
+	USoundConcurrency* SMGSoundConcurrency;
+	UMaterial* DecalMaterial;
+	UAnimBlueprint* SMGAnim_BP;
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;

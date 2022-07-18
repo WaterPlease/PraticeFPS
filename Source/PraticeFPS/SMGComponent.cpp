@@ -17,7 +17,28 @@
 
 USMGComponent::USMGComponent()
 {
+	//SK_SMG11 = Cast<USkeletalMesh>(StaticLoadObject(USkeletalMesh::StaticClass(), nullptr, TEXT("/Game/FPS_Weapon_Bundle/Weapons/Meshes/SMG11/SK_SMG11_X.SK_SMG11_X")));
+	static ConstructorHelpers::FObjectFinder<USkeletalMesh> SK_SMG11Finder(TEXT("/Game/FPS_Weapon_Bundle/Weapons/Meshes/SMG11/SK_SMG11_X.SK_SMG11_X"));
+	SK_SMG11 = SK_SMG11Finder.Object;
 
+	//SMGAnimMontage = Cast<UAnimMontage>(StaticLoadObject(UAnimMontage::StaticClass(), nullptr, TEXT("/Game/FPS_Weapon_Bundle/Weapons/Meshes/SMG11/Anim/SMGAnimMontage.SMGAnimMontage")));
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> SMGAnimMontageFinder(TEXT("/Game/FPS_Weapon_Bundle/Weapons/Meshes/SMG11/Anim/SMGAnimMontage.SMGAnimMontage"));
+	SMGAnimMontage = SMGAnimMontageFinder.Object;
+
+	//SMGCue = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), nullptr, TEXT("/Game/FPS_Weapon_Bundle/Weapons/Meshes/SMG11/Sound/9mm_Cue.9mm_Cue")));
+	static ConstructorHelpers::FObjectFinder<USoundCue> SMGCueFinder(TEXT("/Game/FPS_Weapon_Bundle/Weapons/Meshes/SMG11/Sound/9mm_Cue.9mm_Cue"));
+	SMGCue = SMGCueFinder.Object;
+
+	//SMGSoundConcurrency = Cast<USoundConcurrency>(StaticLoadObject(USoundConcurrency::StaticClass(), nullptr, TEXT("/Game/FPS_Weapon_Bundle/Weapons/Meshes/SMG11/Sound/9mm_SoundConcurrency.9mm_SoundConcurrency")));
+	static ConstructorHelpers::FObjectFinder<USoundConcurrency> SMGSoundConcurrencyFinder(TEXT("/Game/FPS_Weapon_Bundle/Weapons/Meshes/SMG11/Sound/9mm_SoundConcurrency.9mm_SoundConcurrency"));
+	SMGSoundConcurrency = SMGSoundConcurrencyFinder.Object;
+
+	//DecalMaterial = Cast<UMaterial>(StaticLoadObject(UMaterial::StaticClass(), nullptr, TEXT("/Game/Texture/BulletHoleMaterial.BulletHoleMaterial")));
+	static ConstructorHelpers::FObjectFinder<UMaterial> DecalMaterialFinder(TEXT("/Game/Texture/BulletHoleMaterial.BulletHoleMaterial"));
+	DecalMaterial = DecalMaterialFinder.Object;
+	
+	static ConstructorHelpers::FObjectFinder<UAnimBlueprint> AnimBPFinder(TEXT("/Game/FPS_Weapon_Bundle/Weapons/Meshes/SMG11/Anim/SMGAnim_BP.SMGAnim_BP"));
+	SMGAnim_BP = AnimBPFinder.Object;
 }
 
 void USMGComponent::Fire()
@@ -105,19 +126,21 @@ void USMGComponent::InitWeapon(APlayerChar* PlayerContext)
 {
 	Super::InitWeapon(PlayerContext);
 
-	USkeletalMesh* SK_SMG11 = Cast<USkeletalMesh>(StaticLoadObject(USkeletalMesh::StaticClass(), nullptr, TEXT("/Game/FPS_Weapon_Bundle/Weapons/Meshes/SMG11/SK_SMG11_X.SK_SMG11_X")));
 	if (SK_SMG11)
 	{
 		PlayerCharacter->GetMesh()->SetSkeletalMesh(SK_SMG11);
+
+		PlayerCharacter->GetMesh()->CastShadow = false;
 	}
 	else
 	{
-		UE_LOG(LogTemp,Warning, TEXT("Failed to a load asset : %s"), TEXT("/Game/FPS_Weapon_Bundle/Weapons/Meshes/SMG11/SK_SMG11_X.SK_SMG11_X"))
+		UE_LOG(LogTemp, Warning, TEXT("Failed to a load asset : %s"), TEXT("/Game/FPS_Weapon_Bundle/Weapons/Meshes/SMG11/SK_SMG11_X.SK_SMG11_X"))
 	}
 
 
 	PlayerCharacter->GetMesh()->SetAnimationMode(EAnimationMode::AnimationBlueprint);
-	UAnimBlueprint* SMGAnim_BP = Cast<UAnimBlueprint>(StaticLoadObject(UAnimBlueprint::StaticClass(), nullptr, TEXT("/Game/FPS_Weapon_Bundle/Weapons/Meshes/SMG11/Anim/SMGAnim_BP.SMGAnim_BP")));
+	//UAnimBlueprint* SMGAnim_BP = Cast<UAnimBlueprint>(StaticLoadObject(UAnimBlueprint::StaticClass(), nullptr, TEXT("/Game/FPS_Weapon_Bundle/Weapons/Meshes/SMG11/Anim/SMGAnim_BP.SMGAnim_BP_C")));
+
 	if (SMGAnim_BP)
 	{
 		PlayerCharacter->GetMesh()->SetAnimInstanceClass(SMGAnim_BP->GeneratedClass);
@@ -129,7 +152,7 @@ void USMGComponent::InitWeapon(APlayerChar* PlayerContext)
 
 	SetMesh(PlayerCharacter->GetMesh());
 
-	UAnimMontage* SMGAnimMontage = Cast<UAnimMontage>(StaticLoadObject(UAnimMontage::StaticClass(), nullptr, TEXT("/Game/FPS_Weapon_Bundle/Weapons/Meshes/SMG11/Anim/SMGAnimMontage.SMGAnimMontage")));
+
 	if (SMGAnimMontage)
 	{
 		SetAnimMontage(SMGAnimMontage);
@@ -139,7 +162,7 @@ void USMGComponent::InitWeapon(APlayerChar* PlayerContext)
 		UE_LOG(LogTemp, Warning, TEXT("Failed to a load asset : %s"), TEXT("/Game/FPS_Weapon_Bundle/Weapons/Meshes/SMG11/Anim/SMGAnimMontage.SMGAnimMontage"));
 	}
 
-	USoundCue* SMGCue = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), nullptr, TEXT("/Game/FPS_Weapon_Bundle/Weapons/Meshes/SMG11/Sound/9mm_Cue.9mm_Cue")));
+
 	if (SMGCue)
 	{
 		WeaponFireSound = SMGCue;
@@ -148,8 +171,8 @@ void USMGComponent::InitWeapon(APlayerChar* PlayerContext)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Failed to a load asset : %s"), TEXT("/Game/FPS_Weapon_Bundle/Weapons/Meshes/SMG11/Sound/9mm_Cue.9mm_Cue"));
 	}
-	
-	USoundConcurrency* SMGSoundConcurrency = Cast<USoundConcurrency>(StaticLoadObject(USoundConcurrency::StaticClass(), nullptr, TEXT("/Game/FPS_Weapon_Bundle/Weapons/Meshes/SMG11/Sound/9mm_SoundConcurrency.9mm_SoundConcurrency")));
+
+
 	if (SMGSoundConcurrency)
 	{
 		WeaponFireSoundConcurrency = SMGSoundConcurrency;
@@ -159,7 +182,7 @@ void USMGComponent::InitWeapon(APlayerChar* PlayerContext)
 		UE_LOG(LogTemp, Warning, TEXT("Failed to a load asset : %s"), TEXT("/Game/FPS_Weapon_Bundle/Weapons/Meshes/SMG11/Sound/9mm_SoundConcurrency.9mm_SoundConcurrency"));
 	}
 
-	UMaterial* DecalMaterial = Cast<UMaterial>(StaticLoadObject(UMaterial::StaticClass(), nullptr, TEXT("/Game/Texture/BulletHoleMaterial.BulletHoleMaterial")));
+
 	if (DecalMaterial)
 	{
 		WeaponDecalMaterial = DecalMaterial;

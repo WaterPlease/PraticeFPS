@@ -15,6 +15,8 @@ enum class EEnemyState : uint8
 	EES_Idle UMETA(DisplayName="Idle"),
 	EES_Chase UMETA(DisplayName = "Chase"),
 	EES_Attack UMETA(DisplayName = "Attack"),
+	EES_Falling UMETA(DisplayName = "Falling"),
+	EES_Standup UMETA(DisplayName = "Standup"),
 	EES_Dead UMETA(DisplayName = "Dead"),
 
 	EES_MAX UMETA(DisplayName = "DefaultMax"),
@@ -46,6 +48,12 @@ public:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
 	bool bCanAttackPlayer;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
+	float StandupDelay;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI")
+	bool bFalling;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character | Stats")
 	float MaxHealth;
@@ -58,8 +66,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character | Stats")
 	TSubclassOf<UDamageType> DamageType;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character | Animation")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character | Animation")
 	class UAnimMontage* EnemyAnimMontage;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character | Animation")
+	class UAnimationAsset* StandupAnimation;
 
 	class APlayerChar* Player;
 
@@ -86,7 +96,14 @@ public:
 	UEnemyBodypart* LeftLeg;
 
 	FTimerHandle DeathTimerHandle;
+	FTimerHandle StandupTimerHandle;
+private:
+	int32 StandupAnimSectionIndex;
+	float StandupTimeWhole;
+	float StandupTimeTaken;
 
+	FName DefaultMeshCollisionPresetName;
+	FTransform MeshRelativeTransform;
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -111,6 +128,11 @@ public:
 	UFUNCTION()
 	void OnAttackSphereOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
+	void Ragdoll();
+	void StandUp();
+	UFUNCTION(BlueprintCallable)
+	void StandupDone();
+	void UpdateMeshPosition(bool bUpdateMeshPosition);
 
 	UFUNCTION(BlueprintCallable)
 	void DeathEnd();

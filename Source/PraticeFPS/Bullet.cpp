@@ -74,11 +74,11 @@ void ABullet::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrim
 	}
 }
 
-inline void ABullet::SetInitSpeed(float Speed) { ProjectileMovementComponent->InitialSpeed = Speed; }
+void ABullet::SetInitSpeed(float Speed) { ProjectileMovementComponent->InitialSpeed = Speed; }
 
-inline void ABullet::SetMaxSpeed(float Speed) { ProjectileMovementComponent->MaxSpeed = Speed; }
+void ABullet::SetMaxSpeed(float Speed) { ProjectileMovementComponent->MaxSpeed = Speed; }
 
-inline void ABullet::SetBulletHeadSize(float Size) { BulletHead->SetSphereRadius(Size); }
+void ABullet::SetBulletHeadSize(float Size) { BulletHead->SetSphereRadius(Size); }
 
 void ABullet::DestroyBullet()
 {
@@ -94,7 +94,7 @@ void ABullet::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* O
 		this, BulletDamageType);
 
 	// Enemy hit
-	UE_LOG(LogTemp, Warning, TEXT("Bodypart hit : %s => %f"), *(Bodypart->BodypartName),Bodypart->DamageFactor);
+	//UE_LOG(LogTemp, Warning, TEXT("Bodypart hit : %s => %f"), *(Bodypart->BodypartName),Bodypart->DamageFactor);
 	DestroyBullet();
 }
 
